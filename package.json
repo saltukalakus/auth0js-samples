@@ -1,0 +1,9 @@
+{
+  "name": "example",
+  "scripts": {
+    "start": "serve ./content"
+  },
+  "dependencies": {
+    "serve": "8.2.0"
+  }
+}

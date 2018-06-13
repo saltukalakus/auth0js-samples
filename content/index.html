@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Auth0.js Demo Examples</title>
+  <link rel="stylesheet" type="text/css" href="//cdn.auth0.com/styleguide/1/index.css">
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script src="https://cdn.auth0.com/js/auth0/9.6/auth0.min.js"></script>
+
+  <style>
+    .row {
+      margin: 10px 0;
+    }
+
+    pre {
+      margin: 0 0 10px 0;
+      min-height: 300px;
+    }
+
+    code {
+      min-height: 300px;
+    }
+
+    h2 {
+      margin: 20px 0;
+    }
+
+    code span {
+      color: red;
+    }
+
+    code details {
+      padding: 5px;
+      border-radius: 4px;
+    }
+
+    code details p {
+      margin: 5px 0 0 0;
+    }
+
+    code details.error {
+      background: rgba(255, 0, 0, 0.1);
+    }
+
+    #clear-console {
+      cursor: pointer;
+    }
+  </style>
+  <script type="text/javascript">
+    function HTMLConsole(options) {
+      this.ele = $(options.selector);
+      this.data = [];
+      var _this = this;
+      var data;
+      if (data = localStorage.getItem("consoleData")) {
+        data = JSON.parse(data);
+        data.forEach(function (d) {
+          _this.dumpCallback(d.error ? d : null, d.error ? null : d);
+        });
+      }
+    }
+
+    HTMLConsole.prototype.clear = function () {
+      this.data = [];
+      this.ele.html('');
+      localStorage.removeItem("consoleData");
+    };
+
+    HTMLConsole.prototype.dumpCallback = function (err, data) {
+      if (err) {
+        return this.dump(err, 'error');
+      }
+      if (data && data.error) {
+        return this.dump(data, 'error');
+      }
+      if (data) {
+        return this.dump(data);
+      }
+    };
+
+    HTMLConsole.prototype.dump = function (o, className) {
+      className = className || '';
+
+      this.data.push(o);
+      localStorage.setItem("consoleData", JSON.stringify(this.data));
+
+      function replacer(key, value) {
+        if (typeof value === 'object') {
+          return value;
+        }
+        return '<span>' + value + '</span>';
+      }
+
+      var plainStr = JSON.stringify(o).substr(0, 50);
+      var str = JSON.stringify(o, replacer, 4);
+      var html = '<details class="' + className + '">' +
+        '<summary>' + plainStr + '</summary>' +
+        '<p>' + str + '</p>' +
+        '</details>';
+
+      this.ele.append(html);
+
+      this.ele.find('details').removeAttr('open');
+      this.ele.find('details').last().attr('open', true);
+    };
+  </script>
+</head>
+
+<body class="container">
+
+  <div class="row">
+    <div class="col-xs-12">
+      <h1>Auth0.JS playground</h1>
+    </div>
+    <div class="col-xs-6">
+
+      <div>
+        <h2>Embedded Login with cross-origin username and password:</h2>
+        <input class="login-username" value="johnfoo@gmail.com" />
+        <input class="login-password" value="1234" />
+        <input type="button" class="login-db" value="login" />
+      </div>
+
+      <div>
+        <h2>Embedded Login with database connection (resource owner):</h2>
+        <input class="client-login-username" value="johnfoo@gmail.com" />
+        <input class="client-login-password" value="1234" />
+        <input type="button" class="client-login-db" value="login" />
+      </div>
+
+      <div>
+        <h2>Login with Universal Login /authorize:</h2>
+        <input type="button" class="login-hosted" value="Hosted login page" />
+        <input type="button" class="login-facebook" value="Facebook" />
+        <input type="button" class="login-twitter" value="Twitter" />
+        <input type="button" class="login-github" value="Github" />
+      </div>
+
+      <div>
+        <h2>Renew authentication:</h2>
+        <input type="button" class="renew-auth" value="Renew" />
+      </div>
+      <div>
+        <h2>Check if you have an active session:</h2>
+        <input type="button" class="web-message-check-session" value="Check session" />
+      </div>
+      <div>
+        <h2>Get information about the last successful authorizatino request</h2>
+        <input type="button" class="getssodata" value="Get SSO data" />
+      </div>
+
+      <div>
+        <h2>SSO Logout:</h2>
+        <input type="button" class="logout" value="Logout" />
+      </div>
+
+    </div>
+    <div class="col-xs-6">
+      <h2>Console:</h2>
+      <pre><code id="console"></code></pre>
+      <div class="text-right">
+        <i id="clear-console" aria-hidden="true" class="icon-budicon-498 icon"></i>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var htmlConsole = new HTMLConsole({
+      selector: '#console'
+    });
+
+    var webAuth = new auth0.WebAuth({
+      domain: 'saltukalakus.auth0.com',
+      redirectUri: 'localhost:3000',
+      clientID: 'w1DxOVdCG0GMz7bS4wx3VBTzMF8qYSh2',
+      responseType: 'token id_token',
+      scope: "openid profile",
+      audience: "acme"
+    });
+
+    webAuth.parseHash(function (err, data) {
+      console.log(err, data);
+      if (err) {
+        return htmlConsole.dumpCallback(err);
+      }
+
+      if (data) {
+        htmlConsole.dumpCallback(null, data);
+
+        if (data.accessToken) {
+          webAuth.client.userInfo(data.accessToken, htmlConsole.dumpCallback.bind(htmlConsole));
+        }
+      }
+
+      window.location.hash = '';
+    });
+
+    $('#clear-console').click(function () {
+      $('#clear-console').removeClass('icon-budicon-498');
+      $('#clear-console').addClass('icon-budicon-495');
+
+      htmlConsole.clear();
+
+      setTimeout(function () {
+        $('#clear-console').removeClass('icon-budicon-495');
+        $('#clear-console').addClass('icon-budicon-498');
+      }, 250);
+    });
+
+    $('.login-db').click(function (e) {
+      e.preventDefault();
+      webAuth.redirect.loginWithCredentials({
+        connection: 'Username-Password-Authentication',
+        audience: 'acme',
+        username: $('.login-username').val(),
+        password: $('.login-password').val(),
+        state: "some-state",
+        nonce: "some-nonce"
+      }, htmlConsole.dumpCallback.bind(htmlConsole));
+    });
+
+    $('.client-login-db').click(function (e) {
+      e.preventDefault();
+      webAuth.client.login({
+        realm: 'Username-Password-Authentication',
+        username: $('.client-login-username').val(),
+        password: $('.client-login-password').val()
+      }, function (err, data) {
+        htmlConsole.dumpCallback.bind(htmlConsole)(err, data);
+        this.webAuth.client.userInfo(data.accessToken, htmlConsole.dumpCallback.bind(htmlConsole));
+      });
+    });
+
+    $('.login-facebook').click(function (e) {
+      e.preventDefault();
+      webAuth.authorize({ connection: 'facebook' });
+    });
+
+    $('.login-hosted').click(function (e) {
+      e.preventDefault();
+      webAuth.authorize({ realm: 'Username-Password-Authentication'});
+    });
+
+    $('.login-twitter').click(function (e) {
+      e.preventDefault();
+      webAuth.authorize({ connection: 'twitter' });
+    });
+
+    $('.login-github').click(function (e) {
+      e.preventDefault();
+      webAuth.authorize({ connection: 'github' });
+    });
+
+    $('.logout').click(function (e) {
+      e.preventDefault();
+      webAuth.logout({ returnTo: 'localhost:3000' });
+    });
+
+    $('.renew-auth').click(function (e) {
+      e.preventDefault();
+      webAuth.renewAuth({
+        usePostMessage: true,
+        redirectURI: 'localhost:3000/callback.html'
+      },
+        htmlConsole.dumpCallback.bind(htmlConsole)
+      );
+    });
+    $('.web-message-check-session').click(function (e) {
+      e.preventDefault();
+      webAuth.checkSession({}, htmlConsole.dumpCallback.bind(htmlConsole));
+    });
+    $('.getssodata').click(function (e) {
+      e.preventDefault();
+      webAuth.client.getSSOData(htmlConsole.dumpCallback.bind(htmlConsole));
+    });
+    $(document.body).append($('<div class="loaded">LOADED</div>'));
+  </script>
+</body>
+
+</html>
